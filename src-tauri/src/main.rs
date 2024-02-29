@@ -74,6 +74,20 @@ fn remove_file(path: &str) -> Result<String, String> {
         Err(_) => Err("error".into()),
     }
 }
+#[tauri::command]
+fn create_sha256_hash_from_timestamp_with_salt(timestamp: &str) -> Result<String, String> {
+    use dotenv::dotenv;
+    use sha2::Digest;
+    use std::env;
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(timestamp);
+    //get salt from .env file
+    dotenv().ok();
+    let salt = env::var("SALT").expect("SALT must be set");
+    hasher.update(salt);
+    let result = hasher.finalize();
+    Ok(format!("{:x}", result))
+}
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -83,7 +97,8 @@ fn main() {
             check_md5_hash_of_file,
             get_current_path,
             rename_file,
-            remove_file
+            remove_file,
+            create_sha256_hash_from_timestamp_with_salt
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

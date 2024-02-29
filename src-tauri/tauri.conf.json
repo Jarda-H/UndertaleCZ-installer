@@ -10,32 +10,35 @@
   },
   "tauri": {
     "allowlist": {
-      "all": true,
+      "all": false,
+      "app": {},
       "fs": {
-        "all": true,
-        "readFile": true,
         "writeFile": true,
-        "readDir": true,
-        "copyFile": true,
-        "createDir": true,
-        "removeDir": true,
         "removeFile": true,
-        "renameFile": true,
-        "exists": true,
         "scope": ["$TEMP/**"]
       },
+      "os": {
+        "all": true
+      },
+      "process": {
+        "exit": true
+      },
       "dialog": {
-        "all": true,
         "ask": true,
-        "confirm": true,
         "message": true,
         "open": true,
-        "save": true
+        "confirm": true
       },
       "shell": {
         "all": false,
         "open": true,
+        "sidecar": true,
+        "execute": true,
         "scope": [
+          {
+            "name": "binaries/xdelta3-x86_64-pc-windows-msvc.exe",
+            "sidecar": true
+          },
           {
             "name": "xdelta3",
             "cmd": "xdelta3.exe",
@@ -52,7 +55,7 @@
     },
     "windows": [
       {
-        "title": "Undertale Installer",
+        "title": "Undertale instálator češtiny",
         "width": 800,
         "height": 600,
         "resizable": false
@@ -71,7 +74,8 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
-      ]
+      ],
+      "externalBin": ["binaries/xdelta3"]
     }
   }
 }

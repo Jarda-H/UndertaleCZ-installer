@@ -1,5 +1,4 @@
 let t = window.__TAURI__
-const { getName } = t.app;
 const { invoke } = t.tauri;
 const { ask, dialog, message, open: openPicker } = t.dialog;
 const { exit } = t.process;
@@ -8,12 +7,64 @@ const {
     BaseDirectory,
     removeFile: rmTemp,
 } = t.fs;
-const { tempdir } = t.os;
+const { locale, tempdir } = t.os;
 const { open: openPath, Command: RunCmd } = t.shell;
+const { getVersion } = t.app;
 const DISCORD_LINK = "https://discord.gg/beGejNfDmv";
 const STEAM_MD5 = "5903fc5cb042a728d4ad8ee9e949c6eb";
 const GOG_MD5 = "dd8ebb409962e678258106468ced621e";
-let 
+const UNDERTALE_STEAM_ID = 391540;
+const strings = {
+    hashFail: "Nepodařilo se získat hash souboru. Zkuste zvolit jinou složku, popř. nás kontaktute na Discordu.",
+    czFound: "Nalezena nainstalovaná čeština, pro přeinstalaci češtiny stiskněte tlačítko Nainstalovat!",
+    backupFound: " (čeština instalována, byla nalezena záloha originálního souboru data.win)",
+    verifyFolder: "Ověřování složky...",
+    wrongFolder: "Tato složka neobsahuje soubory s hrou!",
+    gogFound: "Nalezena GOG verze, pro instalaci češtiny stiskněte tlačítko Nainstalovat!",
+    steamFound: "Nalezena Steam verze, pro instalaci češtiny stiskněte tlačítko Nainstalovat!",
+    gameEdited: "Hash souboru neodpovídá originální verzi! (Máte hru upravenou?)",
+    reinstallGame: "Nemáte originální Steam ani GOG verzi, přeinstalujte hru.",
+    alert: {
+        error: 'Chyba!',
+        noXdelta: "Nepodařilo se nalézt xdelta3.exe. Instalátor nebude fungovat.",
+        quitTitle: "Ukončit instalátor?",
+        quit: "Opravdu chcete ukončit instalátor?",
+        wrongHashTitle: "Chyba při instalaci. Neplatný hash!",
+        okLabel: 'Ano',
+        cancelLabel: 'Ne',
+        ok: 'Ok',
+        installErrorTitle: "Chyba při instalaci",
+    },
+    fetchFailed: "Nepodařilo se získat informace o nejnovější verzi, instaluji verzi přibalenou s instalátorem.",
+    newestVersion: "Aktuální verze překladu: ",
+    install: {
+        platform: "Stahování patch souboru pro",
+        steam: "Instalace češtiny pro Steam verzi",
+        gog: "Instalace češtiny pro GOG verzi",
+        patchApplied: "Patch aplikován.",
+        done: "Instalace češtiny dokončena.",
+        error: "Chyba při instalaci.",
+        downloadError: "Chyba při stahování češtiny, zkuste to později.",
+        downloaded: "Staženo",
+        saving: "Ukládání souboru",
+        savingError: "Chyba při ukládání souboru",
+        patchSavedAs: "Patch soubor stažen a uložen jako",
+        xdeltaError: "Chyba při aplikaci patche",
+        discord: "Pokud problém bude přetrvávat, kontaktujte nás na Discordu.",
+        run: "Spustit Undertale",
+        exit: "Ukončit",
+    },
+    dontWannaToShare: "Nesdílet data o instalaci",
+    shareData: "Sdílet data o instalaci",
+    showData: "Zobrazit sdílená data",
+    showDataTitle: "Sdílená data",
+    disclaimer: "Sdílení dat je dobrovolné a pomáhá nám instalátor zlepšovat. Data jsou anonymní a neobsahují žádné osobní údaje.",
+    sharingData: "Nahrávání dat...",
+    sharingDataOk: "Data úspěšně nahrána, děkujeme.",
+    sharingDataErr: "Nepodařilo se nahrát data, zkuste to později.",
+    exiting: "Ukončuji...",
+    runningUt: "Spouštím Undertale...",
+}
 //Papyrus letterbox
 function Speak(elem) {
     let text = elem.innerHTML;
@@ -235,7 +286,6 @@ function VDFparse(text, options) {
                         else // &&
                             ok = ok && _ok;
                     }
-                    //console.log('cond', key, val, _ok);
                     if (!ok) {
                         // conditions are not met
                         // continue processing the line (code duplicated from the bottom of our while loop)
@@ -308,10 +358,13 @@ async function IsFolderOK(folder) {
         await invoke('get_file_status', { path: folder + "/UNDERTALE.exe" });
         await invoke('get_file_status', { path: folder + "/data.win" });
     } catch (error) {
-        console.error(error);
         return false;
     }
     return true;
+}
+async function GetFileHash(file) {
+    //get md5 hash - check_md5_hash_of_file
+    return await invoke('check_md5_hash_of_file', { path: file });
 }
 async function VerifyHash(folder) {
     //get md5 hash - check_md5_hash_of_file
@@ -319,13 +372,13 @@ async function VerifyHash(folder) {
     await invoke('check_md5_hash_of_file', { path: folder + "/data.win" })
         .then(async (md5hash) => {
             if (!checkIfValidMD5Hash(md5hash)) {
-                out = [false, "Nepodařilo se získat hash souboru. Zkuste zvolit jinou složku, popř. nás kontaktute na Discordu."];
+                out = [false, strings.hashFail];
                 return;
             }
             //old mod
             let installed = await IsInstalled(folder);
             if (installed) {
-                out = [true, "Nalezena instalovaná čeština, pro přeinstalaci češtiny stiskněte tlačítko Nainstalovat!", "steam"];
+                out = [true, strings.czFound, "steam"];
             }
             out = GetPlatform(md5hash);
             if (out[2] == false) {
@@ -333,23 +386,21 @@ async function VerifyHash(folder) {
                 await invoke('check_md5_hash_of_file', { path: folder + "/data_old.win" })
                     .then(async (md5hash) => {
                         if (!checkIfValidMD5Hash(md5hash)) {
-                            out = [false, "Nepodařilo se získat hash souboru. Zkuste zvolit jinou složku, popř. nás kontaktute na Discordu."];
+                            out = [false, strings.hashFail];
                             return;
                         }
                         out = GetPlatform(md5hash);
-                        out[1] += " (čeština instalována, byla nalezena záloha originálního souboru data.win)";
+                        out[1] += strings.backupFound;
                         out[3] = 'old';
                     }).catch((error) => {
-                        console.error(error)
-                        console.log("not found");
+                        writeToLog(error, "check_md5_hash_of_file");
                     })
             }
 
         })
         .catch((error) => {
-            console.error(error)
-            console.log("no md5");
-            out = [false, "Nepodařilo se získat hash souboru. Zkuste zvolit jinou složku, popř. nás kontaktute na Discordu."];
+            writeToLog(error, "data.win hash not found");
+            out = [false, strings.hashFail];
         })
     return out;
 }
@@ -362,17 +413,16 @@ async function GetSteamFolder() {
         .then(async (path) => {
             if (!path) {
                 error = true;
+                writeToLog('NoPath', "noSteam");
                 return;
             }
             await invoke('get_file_content', {
                 path: `${path}/steamapps/libraryfolders.vdf`
             }).then(async (data) => {
                 let json = VDFparse(data);
-                console.log(JSON.stringify(json));
-                //undertale id 391540
                 let i;
                 Object.assign([], json.libraryfolders)
-                    .filter(({ apps }) => Object.hasOwn(apps, "391540"))
+                    .filter(({ apps }) => Object.hasOwn(apps, UNDERTALE_STEAM_ID))
                     .map(({ path }) => {
                         i = `${path}\\\\steamapps\\\\common\\\\Undertale`;
                     })
@@ -382,14 +432,12 @@ async function GetSteamFolder() {
                     error = true;
                 }
             }).catch((error) => {
-                console.error(error)
-                console.log("No steam installed");
+                writeToLog(error, "noSteam");
                 error = true;
             });
         })
         .catch((error) => {
-            console.error(error)
-            console.log("No steam installed");
+            writeToLog(error, "noSteam");
             error = true;
         })
     if (error) return false;
@@ -398,43 +446,43 @@ async function GetSteamFolder() {
 
 async function checkFolder(entry) {
     if (!entry) {
-        document.querySelector(".status").innerHTML = "Tato složka neobsahuje soubory s hrou!";
+        document.querySelector(".status").innerHTML = strings.wrongFolder;
         return;
     }
     document.querySelector(".input input").value = entry;
     //reset
-    document.querySelector(".status").innerHTML = "Ověřování složky...";
+    document.querySelector(".status").innerHTML = strings.verifyFolder;
     let f = await IsFolderOK(entry);
     if (!f) {
-        document.querySelector(".status").innerHTML = "Tato složka neobsahuje soubory s hrou!";
+        document.querySelector(".status").innerHTML = strings.wrongFolder;
         return;
     }
 
     let hash = await VerifyHash(entry);
-    console.log("check hash:", hash);
+    if (hash[2]) {
+        writeToLog("Found" + hash[2] + "version", "GameFound");
+    }
     document.querySelector(".status").innerHTML = hash[1];
 }
 
 async function IsInstalled(folder) {
-    console.log("checking if installed", folder);
     //md5 hash
     let out = false;
     await invoke('check_md5_hash_of_file', { path: folder + "\\data_old.win" })
         .then(async (md5hash) => {
             if (!checkIfValidMD5Hash(md5hash)) {
-                console.log("Invalid hash of", folder + "\\data_old.win");
                 out = false;
                 return;
             }
             let steamElement = document.querySelector(".md5-steam");
             let steam = steamElement ? steamElement.innerHTML : STEAM_MD5;
             if (md5hash == steam) {
-                console.log("Steam original", folder + "\\data_old.win");
+                writeToLog("originalBackupFonud", "SteamInstall");
                 out = true;
             }
         })
         .catch(() => {
-            console.log("Is not yet installed, or backup data.win not found", folder + "\\data_old.win");
+            writeToLog("CZNotInstalledOrBackupNotFound", "SteamInstall");
             out = false;
         })
     return out;
@@ -446,7 +494,7 @@ async function CheckIfDeltaPatchIsInTheFolder() {
     try {
         await invoke('get_file_status', { path: path + "\\xdelta3.exe" });
     } catch (error) {
-        console.error(error, 'was checking file: ' + path + "\\xdelta3.exe");
+        writeToLog("NotFound", "xdelta3");
         return false;
     }
     return true;
@@ -458,50 +506,184 @@ function GetPlatform(md5hash) {
     let gog = gogElement ? gogElement.innerHTML : GOG_MD5;
     switch (md5hash) {
         case gog:
-            return [true, "Nalezena GOG verze, pro instalaci češtiny stiskněte tlačítko Nainstalovat!", "gog"];
+            return [true, strings.gogFound, "gog"];
         case steam:
-            return [true, "Nalezena Steam verze, pro instalaci češtiny stiskněte tlačítko Nainstalovat!", "steam"];
+            return [true, strings.steamFound, "steam"];
         default:
-            return [false, "Hash souboru neodpovídá originální verzi! (Máte hru upravenou?)", false];
+            return [false, strings.gameEdited, false];
     }
 }
+let rename = 0;
 async function renameFile(from, to, path) {
     //if path is missing \\ at the end, add it
     if (path[path.length - 1] != "\\") path += "\\";
-    console.log("trying to rename", path + from, path + to)
+    writeToLog(`${from} to ${to}`, `rename${rename++}`);
     return await invoke('rename_file', {
         oldPath: path + from,
         newPath: path + to
     });
 }
+let remove = 0;
 async function removeFile(file, path) {
     //if path is missing \\ at the end, add it
     if (path[path.length - 1] != "\\") path += "\\";
-    console.log("trying to remove", path + file)
+    writeToLog(`remove ${file}`, `remove${remove++}`);
     return await invoke('remove_file', {
         path: path + file
     });
 }
+let consoleLog = {};
+function writeToLog(text, action) {
+    consoleLog[action] = text;
+    console.log(JSON.stringify(consoleLog));
+}
+async function sendLogToServer(data) {
+    document.querySelector(".choice").innerHTML = `<p>${strings.sharingData}</p>`;
+    //create a hash
+    let hash;
+    await invoke('create_sha256_hash_from_timestamp_with_salt', { 'timestamp': data["TimeStart"].toString() }).then((h) => {
+        hash = h;
+    })
+    //return a promise, fetch the server
+    return await fetch("https://undertale.cz/api/log", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            data,
+            auth: hash
+        })
+    }).then((response) => {
+        return response.json();
+    }).then((data) => {
+        if (data.ok) {
+            document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataOk}</p>`;
+            return;
+        }
+        throw new Error("Server error");
+    }).catch((error) => {
+        document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataErr}</p>`;
+        return error;
+    });
+}
+function endInstallerWithError() {
+    writeToLog(false, "InstallDone");
+    //option to share data + exit
+    document.querySelector("#tab3").innerHTML += `
+    <div class="share-data">
+        <div class="pap">
+            <img src="./assets/img/Papyrus_share.png" alt="Papyrus">
+        </div>
+        <div class="choice">
+            <input type="checkbox" name="data" checked/>
+            <label for="data" class="share">${strings.shareData}</label>
+            <p class="disclaimer">${strings.disclaimer} <button class="view-data">${strings.showData}</button></p>
+        </div>
+    </div>
+    <div class="install-btns float-right">
+    <div>
+        <button class="exit-done">${strings.install.exit}</button>
+    </div>
+  </div>`;
+}
+async function setTimeoutPromise(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 document.addEventListener("DOMContentLoaded", async () => {
+    let time = new Date().getTime();
+    writeToLog(time, "TimeStart");
+    let version = await getVersion();
+    writeToLog(version, "App version");
+    let lang = await locale();
+    writeToLog(lang, "Lang");
 
     document.addEventListener("click", async (e) => {
-        let targetED = e.target.closest(".exit-done");
-        let targetRUN = e.target.closest(".run-undertale");
-        if (targetRUN) {
-            setTimeout(async () => {
-                //exit tauri app
-                await exit(1);
-            }, 5000);
-            let i = await openPath(undertaleEXE);
-            console.log(i);
-            //
-        } else if (targetED) {
-            await exit(1);
+        let share = document.querySelector(".share-data input");
+        if (share) share = share.checked;
+        switch (e.target) {
+            //last tab - run undertale
+            case document.querySelector(".run-undertale"):
+                //if share data is checked, send it to the server
+                if (share) {
+                    let time = new Date().getTime();
+                    writeToLog(time, "TimeEnd");
+                    await sendLogToServer(consoleLog).then(() => {
+                        document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataOk} ${strings.runningUt}</p>`;
+                    }).catch(() => {
+                        document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataErr} ${strings.runningUt}</p>`;
+                    });
+
+                }
+                await openPath(undertaleEXE);
+                break;
+            //last tab - exit
+            case document.querySelector(".exit-done"):
+                //if share data is checked, send it to the server
+                if (share) {
+                    let time = new Date().getTime();
+                    writeToLog(time, "TimeEnd");
+                    await sendLogToServer(consoleLog).then(() => {
+                        document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataOk} ${strings.exiting}</p>`;
+                    }).catch(() => {
+                        document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataErr} ${strings.exiting}</p>`;
+                    });
+                    await setTimeoutPromise(5000);
+                }
+                await exit(0);
+                break;
+            case document.querySelector(".view-data"):
+                let j = "";
+                //convert the array to text
+                for (let i in consoleLog) {
+                    if (i == "ShareData") continue;
+                    j += `${i}: ${consoleLog[i]}`;
+                    if (i != consoleLog.length - 1) j += "\n";
+                }
+                await message(j,
+                    {
+                        title: strings.showDataTitle,
+                        type: 'info',
+                        okLabel: strings.alert.ok
+                    });
+                break;
+
         }
     });
+    //on change
+    document.addEventListener("change", (e) => {
+        switch (e.target) {
+            //share data last tab
+            case document.querySelector(".share-data input"):
+                let div = e.target.closest(".share-data");
+                let para = div.querySelector("label");
+                let pap = div.querySelector(".pap img");
+                para.classList.remove("share", "dont-share");
+                if (e.target.checked) {
+                    para.textContent = strings.shareData;
+                    para.classList.add("share");
+                    //pap blush
+                    pap.src = "./assets/img/Papyrus_share.png";
+                } else {
+                    para.textContent = strings.dontWannaToShare;
+                    para.classList.add("dont-share");
+                    //pap mad
+                    pap.src = "./assets/img/Papyrus_dontshare.png";
+                }
+                writeToLog(e.target.checked, "ShareData");
+                break;
+            default:
+                console.log("Changed", e.target);
+                break;
+        }
+    })
     document.querySelector(".discord").addEventListener("click", async (e) => {
         e.preventDefault();
-        await openPath(DISCORD_LINK);
+        await openPath(DISCORD_LINK).then(() => {
+            writeToLog(true, "DiscordClicked");
+        }).catch((err) => {
+            writeToLog(err, "DiscordClickedError");
+        });
     })
     document.addEventListener('contextmenu', e => e.preventDefault());
     setTimeout(() => {
@@ -512,9 +694,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         let delta = await CheckIfDeltaPatchIsInTheFolder();
         if (!delta) {
             //show alert message using tauri
-            await message('Nepodařilo se nalézt xdelta3.exe. Instalátor nebude fungovat.',
+            await message(strings.alert.noXdelta,
                 {
-                    title: 'Chyba!',
+                    title: strings.alert.error,
                     type: 'error'
                 });
             return;
@@ -526,11 +708,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     document.querySelector(".exit").addEventListener("click", async () => {
-        let yes = await ask('Opravdu chcete instalátor ukončit?', {
-            title: 'Ukončit instalátor?', type: 'question', okLabel: 'Ano', cancelLabel: 'Ne'
+        let yes = await ask(strings.alert.quit, {
+            title: strings.alert.quitTitle, type: 'question', okLabel: strings.alert.okLabel, cancelLabel: strings.alert.cancelLabel
         });
-        console.log("end?", yes);
-        if (yes == true) await exit(0);
+        if (yes) await exit(0);
     })
     //go to tab 2
     document.querySelector(".next").addEventListener("click", async () => {
@@ -538,10 +719,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("tab1").style.display = "none";
         document.getElementById("tab2").style.display = "block";
         Speak(document.querySelector("#tab2 .letter-box p"));
-        console.log("Response", Steam);
+
         if (Steam) {
             document.querySelector(".input input").value = Steam;
             document.querySelector('.input input').dispatchEvent(new Event('input', { bubbles: true }));
+            writeToLog(true, "SteamFolderWithTheGameFound");
         } else {
             await checkFolder();
         }
@@ -559,10 +741,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             .then(data => {
                 ver.innerHTML = JSON.stringify(data);
                 if (!data.avalable) {
-                    ver.innerHTML = "Nepodařilo se získat informace o nejnovější verzi, instaluji verzi přibalenou s instalátorem.";
+                    ver.innerHTML = strings.fetchFailed;
                     return;
                 }
-                ver.innerHTML = `<p>Aktuální verze překladu: ${data.version}</p>
+                ver.innerHTML = `<p>${strings.newestVersion}${data.version}</p>
         <div class="file-data" style="display: none">
             <p class="md5-steam">${data.md5.original_steam}</p>
             <p class="md5-gog">${data.md5.original_gog}</p>
@@ -570,13 +752,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             <p class="gog-cz">${data.gog}</p>
         </div>`;
             }).catch(() => {
-                ver.innerHTML = "Nepodařilo se získat informace o nejnovější verzi, instaluji verzi přibalenou s instalátorem.";
+                ver.innerHTML = strings.fetchFailed;
             });
 
         Promise.race([fetchPromise, timeoutPromise])
             .catch(error => {
-                ver.innerHTML = "Nepodařilo se získat informace o nejnovější verzi, instaluji verzi přibalenou s instalátorem.";
-                console.error(error)
+                ver.innerHTML = strings.fetchFailed;
+                writeToLog(error, "fetchTimedOut");
             });
     });
     //tab 2
@@ -591,7 +773,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             multiple: false,
             defaultPath: val
         });
-        console.log(selected)
         if (selected) checkFolder(selected);
     })
     document.querySelector(".input input").addEventListener("input", async () => {
@@ -605,18 +786,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         let folder = document.querySelector(".input input").value;
         let f = await IsFolderOK(folder);
         if (!f) {
-            await message('Tato složka neobsahuje soubory s hrou!', {
-                title: 'Chyba!', type: 'warning', okLabel: 'OK'
+            await message(strings.wrongFolder, {
+                title: strings.alert.error, type: 'warning', okLabel: strings.alert.okLabel
             });
             return;
         }
         //hash verify
         let hash = await VerifyHash(folder);
-        console.log("hash", hash);
         let platform = hash[2];
         if (!platform) {
-            await message('Nemáte originální Steam ani GOG verzi, přeinstalujte hru.', {
-                title: 'Neplatný hash!', type: 'warning', okLabel: 'OK'
+            await message(strings.reinstallGame, {
+                title: strings.alert.wrongHashTitle, type: 'warning', okLabel: strings.alert.okLabel
             });
             return;
         }
@@ -637,23 +817,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         let ins = document.querySelector(".install-progress");
         if (url) {
             //download the file from the server and save it
-            ins.innerHTML += `<p>Stahování patch souboru pro ${platform[0].toUpperCase() + platform.slice(1)}.</p>`;
+            ins.innerHTML += `<p>${strings.install.platform} ${platform[0].toUpperCase() + platform.slice(1)}.</p>`;
             let timestamp = new Date().getTime();
-            if (platform == "steam") {
-                deltaFile = `steam_${timestamp}.patch`
-            } else {
-                deltaFile = `gog_${timestamp}.patch`
-            }
+            deltaFile = (platform == "steam") ?
+                `steam_${timestamp}.patch` : deltaFile = `gog_${timestamp}.patch`;
             let response;
             try {
                 response = await fetch(url + `?cache=${timestamp}`);
             } catch (err) {
-                ins.innerHTML += `<p>Chyba při stahování češtiny, zkuste to později.</p>`;
+                writeToLog(err, "ServerFetchError");
+                ins.innerHTML += `<p>${strings.install.downloadError}</p>`;
+                endInstallerWithError();
                 return;
             }
-            console.log(response);
             if (!response.ok) {
-                ins.innerHTML += `<p>Chyba při stahování češtiny (chyba: ${response.status}), zkuste to později.</p>`;
+                writeToLog(response, "ServerFetchError");
+                ins.innerHTML += `<p>${strings.install.downloadError}</p>`;
+                endInstallerWithError();
                 return;
             }
             let totalLength = response.headers.get('Content-Length');
@@ -671,26 +851,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 let progress = Math.round(receivedLength / totalLength * 100);
                 if (progress < 99) {
-                    document.querySelector(".install-progress .dwnld").innerHTML = `Staženo ${progress}%`;
+                    document.querySelector(".install-progress .dwnld").innerHTML = `${strings.install.downloaded} ${progress}%`;
                 } else {
-                    document.querySelector(".install-progress .dwnld").innerHTML = `Staženo. Ukládání souboru.`;
+                    document.querySelector(".install-progress .dwnld").innerHTML = `${strings.install.downloaded}. ${strings.install.saving}.`;
                 }
             }
             await writeBinaryFile(deltaFile, data, { dir: BaseDirectory.Temp })
                 .catch((err) => {
-                    console.error(err);
-                    ins.innerHTML += `<p>Chyba při ukládání souboru ${deltaFile}.</p>`;
+                    writeToLog(err, "SavePatchError");
+                    ins.innerHTML += `<p>${strings.install.savingError} ${deltaFile}.</p>`;
+                    endInstallerWithError();
                     return;
                 });
-            console.log("tu", deltaFile);
-            ins.innerHTML += `<p>Patch soubor stažen a uložen jako ${deltaFile}.</p>`;
+            ins.innerHTML += `<p>${strings.install.patchSavedAs} ${deltaFile}.</p>`;
         }
         let oldFile = `${folder}\\data.win`;
         //if already installed
         let installed = await IsInstalled(folder);
         if (installed) oldFile = `${folder}\\data_old.win`;
-        console.log("is installed", installed)
-        console
         let finalFile = `${folder}\\data_patched.win`;
         let tempPath = await tempdir();
         //apply patch
@@ -700,85 +878,114 @@ document.addEventListener("DOMContentLoaded", async () => {
             oldFile, `${tempPath}${deltaFile}`, finalFile
         ];
         let cmd = await new RunCmd('xdelta3', args).execute();
-        console.log("running xdelta3 width args", args, ", response: ", cmd);
         if (cmd.code == 1) {
             switch (cmd.stderr) {
                 case "xdelta3: target window checksum mismatch: XD3_INVALID_INPUT\r\n":
-                    console.log("MD5 hash nesedí!");
-                    ins.innerHTML += '<p>Chyba při instalaci.</p>';
-                    await message('Nepodařilo se ověřit hash souboru s daty. Přeinstalujte hru.',
+                    //get hash
+                    await GetFileHash(oldFile).then(async (md5hash) => {
+                        writeToLog([cmd.stderr, cmd.stdout, "MD5 hash nesedí!", md5hash], "xdelta3Error");
+                    });
+                    ins.innerHTML += `<p>${strings.install.error}</p>`;
+                    await message(strings.reinstallGame,
                         {
-                            title: 'Chyba při instalaci',
+                            title: strings.alert.installErrorTitle,
                             type: 'error'
                         });
                     break;
                 default:
-                    console.log("Chyba při aplikaci patche", cmd.stderr);
-                    ins.innerHTML += `<p>Chyba při aplikaci patche: ${cmd.stderr}</p>`;
-                    ins.innerHTML += `<p>Pokud problém bude přetrvávat, kontaktujte nás na Discordu.</p>`;
-                    await message('Neočekávaná chyba při aplikaci patche.', {
-                        title: 'Chyba při instalaci',
+                    writeToLog([cmd.stderr, cmd.stdout, "Neznámá chyba!"], "xdelta3Error");
+                    ins.innerHTML += `<p>${strings.install.xdeltaError}: ${cmd.stderr}</p>`;
+                    ins.innerHTML += `<p>${strings.install.discord}</p>`;
+                    await message(strings.install.xdeltaError, {
+                        title: strings.alert.installErrorTitle,
                         type: 'error'
                     });
                     break;
             }
+            endInstallerWithError();
             return;
         }
-        document.querySelector(".install-progress").innerHTML += '<p>Došlo k aplikování češtiny.</p>';
+        let progress = document.querySelector(".install-progress");
+        let tab = document.querySelector("#tab3");
+        progress.innerHTML += `<p>${strings.install.patchApplied}</p>`;
         if (!installed) {
             //rename files - data.win to data_old.win
             let r = await renameFile("data.win", "data_old.win", folder);
-            console.log("First install, renamed", r);
+            writeToLog(true, "FirstInstall");
             if (r == 'ok') {
-                document.querySelector(".install-progress").innerHTML += '<p>Soubor data.win přejmenován na data_original.win.</p>';
+                progress.innerHTML += '<p>Soubor data.win přejmenován na data_original.win.</p>';
             } else {
-                document.querySelector(".install-progress").innerHTML += '<p>Chyba při přejmenovávání data.win.</p>';
-                document.querySelector("#tab3").innerHTML += "<h2>Instalace se nepodařila.</h2>";
+                writeToLog(`error_${r}`, `rename${rename}_error`);
+                progress.innerHTML += '<p>Chyba při přejmenovávání data.win.</p>';
+                tab.innerHTML += `<h2>${strings.install.error}</h2>`;
+                endInstallerWithError();
                 return;
             }
         } else {
             //del data.win
             let remove = await removeFile("data.win", folder);
-            console.log("Already installed, removed", remove);
+            writeToLog(false, "FirstInstall");
             if (remove == 'ok') {
-                document.querySelector(".install-progress").innerHTML += '<p>Soubor data.win smazán.</p>';
+                progress.innerHTML += '<p>Soubor data.win smazán.</p>';
             } else {
-                document.querySelector(".install-progress").innerHTML += '<p>Chyba mazání data.win.</p>';
-                document.querySelector("#tab3").innerHTML += "<h2>Instalace se nepodařila.</h2>";
+                writeToLog(`error_${r}`, `remove${remove}_error`);
+                progress.innerHTML += '<p>Chyba mazání data.win.</p>';
+                tab.innerHTML += `<h2>${strings.install.error}</h2>`;
+                endInstallerWithError();
                 return;
             }
         }
         //move data_patched.win to data.win
         let r = await renameFile(`data_patched.win`, `data.win`, folder);
-        console.log("data_patched.win to data.win", r);
         if (r == 'ok') {
-            document.querySelector(".install-progress").innerHTML += '<p>Soubor data_patched.win přejmenován.</p>';
+            progress.innerHTML += '<p>Soubor data_patched.win přejmenován.</p>';
         } else {
-            document.querySelector(".install-progress").innerHTML += '<p>Chyba při přejmenovávání data_patched.win.</p>';
-            document.querySelector("#tab3").innerHTML += "<h2>Instalace se nepodařila.</h2>";
+            writeToLog(`error_${r}`, `rename${rename}_error`);
+            progress.innerHTML += '<p>Chyba při přejmenovávání data_patched.win.</p>';
+            tab.innerHTML += `<h2>${strings.install.error}</h2>`;
+            endInstallerWithError();
             return;
         }
         //if was online install, delete the patch
         let error = false;
         if (url) {
-            console.log("remove temp patch");
+            writeToLog(true, "WasOnlineInstall");
             await rmTemp(deltaFile, { dir: BaseDirectory.Temp })
                 .then(() => {
-                    document.querySelector(".install-progress").innerHTML += `<p>Patch soubor ${deltaFile} smazán.</p>`;
+                    progress.innerHTML += `<p>Patch soubor ${deltaFile} smazán.</p>`;
                 }).catch((err) => {
-                    console.log(err);
+                    writeToLog(err, "TempRemoveError");
                     error = true;
-                    document.querySelector(".install-progress").innerHTML += `<p>Chyba mazání ${deltaFile}.</p>`;
-                    document.querySelector("#tab3").innerHTML += "<h2>Instalace se nepodařila.</h2>";
+                    progress.innerHTML += `<p>Chyba mazání ${deltaFile}.</p>`;
+                    tab.innerHTML += `<h2>${strings.install.error}</h2>`;
                 });
+        } else {
+            writeToLog(false, "WasOnlineInstall");
         }
-        if (error) return;
-        document.querySelector("#tab3").innerHTML += "<h2>Instalace dokončena.</h2>";
+        if (error) {
+            endInstallerWithError();
+            return;
+        }
 
-        document.querySelector("#tab3").innerHTML += `<div class="install-btns float-right">
+        writeToLog(true, "InstallDone");
+        tab.innerHTML += `<h2>${strings.install.done}</h2>`;
+        //option to share data
+        tab.innerHTML += `
+        <div class="share-data">
+            <div class="pap">
+                <img src="./assets/img/Papyrus_share.png" alt="Papyrus">
+            </div>
+          <div class="choice">
+                <input type="checkbox" name="data" checked/>
+                <label for="data" class="share">${strings.shareData}</label>
+                <p class="disclaimer">${strings.disclaimer} <button class="view-data">${strings.showData}</button></p>
+            </div>
+        </div>
+        `;
+        tab.innerHTML += `<div class="install-btns float-right">
         <div>
-            <button class="run-undertale">Spustit Undertale</button>
-            <button class="exit-done">Ukončit</button>
+            <button class="run-undertale">${strings.install.run}</button>
+            <button class="exit-done">${strings.install.exit}</button>
         </div>
       </div>`;
         undertaleEXE = `${folder}/UNDERTALE.exe`;
