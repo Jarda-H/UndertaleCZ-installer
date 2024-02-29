@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Undertale</title>
+  <link rel="preload" href="./fonts/Papyrus-Regular.woff" as="font" type="font/woff" crossorigin>
+  <link rel="preload" href="./fonts/Papyrus-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="banner">
+    <div class="discord">
+      <img src="./assets/img/discord-icon.png" alt="Discord logo">
+      <p>Připoj se na náš Discord!</p>
+    </div>
+  </div>
+  <!-- <div class="windows-bar" id="action-bar">
+    <div class="title" id="action-bar-title">Undertale překlad</div>
+    <div class="buttons">
+      <div class="minimize-btn">
+        <svg aria-hidden="true" role="img" width="12" height="12" viewBox="0 0 12 12">
+          <rect fill="currentColor" width="10" height="1" x="1" y="6"></rect>
+        </svg>
+      </div>
+      <div class="close-btn">
+        <svg aria-hidden="true" role="img" width="12" height="12" viewBox="0 0 12 12">
+          <polygon fill="currentColor" fill-rule="evenodd"
+            points="11 1.576 6.583 6 11 10.424 10.424 11 6 6.583 1.576 11 1 10.424 5.417 6 1 1.576 1.576 1 6 5.417 10.424 1">
+          </polygon>
+        </svg>
+      </div>
+    </div>
+  </div> -->
+  <div class="loader">
+    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 0h2v1h2v1h1v2h2V2h1V1h2V0h2v1h1v1h1v8h-2v2h-2v2h-2v2H6v-2H4v-2H2v-2H0V2h1V1h1V0z" fill="red">
+      </path>
+    </svg>
+    <p>Načítání...</p>
+  </div>
+  <div class="content">
+    <div class="tab active" id="tab0">
+      <div class="start">
+        <button class="start-installer">Start</button>
+      </div>
+    </div>
+    <div class="tab" id="tab1">
+      <div class="letter-box">
+        <div class="img">
+          <img class="pap1" src="./assets/img/Papyrus_normal1.png" alt="Papyrus">
+          <img class="pap2" src="./assets/img/Papyrus_normal2.png" alt="Papyrus">
+        </div>
+        <p>ČLOVĚKU! VÍTEJ V INSTALÁTORU ČEŠTINY PRO UNDERTALE!
+          POKRAČUJ STISKEM: 'DÁLE'!</p>
+      </div>
+      <div class="install-btns">
+        <button class="exit">Ukončit</button>
+        <button class="next">Dále</button>
+      </div>
+    </div>
+
+    <div class="tab" id="tab2">
+      <div class="letter-box">
+        <div class="img">
+          <img class="pap1" src="./assets/img/Papyrus_cool1.png" alt="Papyrus">
+          <img class="pap2" src="./assets/img/Papyrus_cool2.png" alt="Papyrus">
+        </div>
+        <p>VYBER SLOŽKU, VE KTERÉ SE TVÁ HRA NACHÁZÍ!</p>
+      </div>
+      <div class="input">
+        <input type="text">
+        <input class="pick-path" type="button" value="Zvolit složku">
+      </div>
+      <div class="status">
+        <p class="status-text">Ověřování složky...</p>
+      </div>
+      <div class="newest-version">Získávání verze překladu...</div>
+      <div class="install-btns">
+        <button class="prev">Zpět</button>
+        <button class="install">Nainstalovat</button>
+      </div>
+    </div>
+    <div class="tab" id="tab3">
+      <div class="install-progress"></div>
+    </div>
+  </div>
+  <script charset="UTF-8" src="./js/main.js" type="module"></script>
+</body>
+
+</html>
