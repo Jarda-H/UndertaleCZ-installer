@@ -26,7 +26,6 @@ const strings = {
     reinstallGame: "Nemáte originální Steam ani GOG verzi, přeinstalujte hru.",
     alert: {
         error: 'Chyba!',
-        noXdelta: "Nepodařilo se nalézt xdelta3.exe. Instalátor nebude fungovat.",
         quitTitle: "Ukončit instalátor?",
         quit: "Opravdu chcete ukončit instalátor?",
         wrongHashTitle: "Chyba při instalaci. Neplatný hash!",
@@ -488,17 +487,6 @@ async function IsInstalled(folder) {
     return out;
 }
 
-async function CheckIfDeltaPatchIsInTheFolder() {
-    //check if xdelta3.exe exists using tauri
-    let path = await invoke('get_current_path');
-    try {
-        await invoke('get_file_status', { path: path + "\\xdelta3.exe" });
-    } catch (error) {
-        writeToLog("NotFound", "xdelta3");
-        return false;
-    }
-    return true;
-}
 function GetPlatform(md5hash) {
     let steamElement = document.querySelector(".md5-steam");
     let steam = steamElement ? steamElement.innerHTML : STEAM_MD5;
@@ -690,17 +678,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelector(".loader").classList.add("remove");
     }, 1000);
     document.querySelector(".start-installer").addEventListener("click", async () => {
-        //check if xdelta3.exe exists
-        let delta = await CheckIfDeltaPatchIsInTheFolder();
-        if (!delta) {
-            //show alert message using tauri
-            await message(strings.alert.noXdelta,
-                {
-                    title: strings.alert.error,
-                    type: 'error'
-                });
-            return;
-        }
         //2nd page
         document.querySelector("#tab0").classList.remove("active");
         document.querySelector("#tab1").classList.add("active");
@@ -877,7 +854,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             "-s",
             oldFile, `${tempPath}${deltaFile}`, finalFile
         ];
-        let cmd = await new RunCmd('xdelta3', args).execute();
+        let car = RunCmd.sidecar('binaries/xdelta3', args);
+        let cmd = await car.execute();
         if (cmd.code == 1) {
             switch (cmd.stderr) {
                 case "xdelta3: target window checksum mismatch: XD3_INVALID_INPUT\r\n":

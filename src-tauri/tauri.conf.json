@@ -36,12 +36,8 @@
         "execute": true,
         "scope": [
           {
-            "name": "binaries/xdelta3-x86_64-pc-windows-msvc.exe",
-            "sidecar": true
-          },
-          {
-            "name": "xdelta3",
-            "cmd": "xdelta3.exe",
+            "name": "binaries/xdelta3",
+            "sidecar": true,
             "args": [
               "-d",
               "-s",
