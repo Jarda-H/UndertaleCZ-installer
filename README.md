@@ -1,7 +1,9 @@
-# Tauri + Vanilla
+# Instalátor Undertale češtiny
+Instalátor češtiny do hry Undertale.
+[Web překladu](https://undertale.cz)
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
+## Problémy
+Při problémech založte [Issue](https://github.com/Jarda-H/UndertaleInstaller/issues) popisující kroky a nejlépe čas, kdy problém nastal.
 
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## Pull req.
+Pokud máte nápad jak instalátor vylepšit, vytvořte si fork tohoto rep. a vytvořte pull req. s Vaší změnou!
