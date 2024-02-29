@@ -10,6 +10,7 @@ const {
 const { locale, tempdir } = t.os;
 const { open: openPath, Command: RunCmd } = t.shell;
 const { getVersion } = t.app;
+const { resolveResource } = t.path;
 const DISCORD_LINK = "https://discord.gg/beGejNfDmv";
 const STEAM_MD5 = "5903fc5cb042a728d4ad8ee9e949c6eb";
 const GOG_MD5 = "dd8ebb409962e678258106468ced621e";
@@ -783,16 +784,34 @@ document.addEventListener("DOMContentLoaded", async () => {
         let ver = document.querySelector(".newest-version");
         let steam = ver.querySelector(".file-data .steam-cz");
         let gog = ver.querySelector(".file-data .gog-cz");
-        let deltaFile, url;
-        if (platform == "steam") {
-            deltaFile = "steam.patch"
-            if (steam) url = steam.innerHTML;
+        let deltaFile;
+        let url = false;
+        if (
+            (steam && gog)
+        ) {
+            //online install
+            if (platform == "steam") {
+                url = steam.innerHTML;
+            } else {
+                url = gog.innerHTML;
+            }
         } else {
-            deltaFile = "gog.patch"
-            if (gog) url = gog.innerHTML;
-        };
+            //offline install
+            console.log('offline')
+            if (platform == "steam") {
+                //main.js:991  Uncaught (in promise) invalid utf-8 sequence of 1 bytes from index 108
+                deltaFile = await resolveResource("offline/s.txt").catch((e) => {
+                    console.log(e)
+                })
+            } else {
+                deltaFile = await resolveResource("offline/gog.patch").catch((e) => {
+                    console.log(e)
+                })
+            }
+        }
         let ins = document.querySelector(".install-progress");
         if (url) {
+            console.log('web')
             //download the file from the server and save it
             ins.innerHTML += `<p>${strings.install.platform} ${platform[0].toUpperCase() + platform.slice(1)}.</p>`;
             let timestamp = new Date().getTime();
@@ -844,7 +863,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         let oldFile = `${folder}\\data.win`;
         //if already installed
-        let installed = await IsInstalled(folder);
+        let installed = await IsInstalled(folder).catch((e) => {
+            console.log("Cant verify")
+        })
         if (installed) oldFile = `${folder}\\data_old.win`;
         let finalFile = `${folder}\\data_patched.win`;
         let tempPath = await tempdir();
