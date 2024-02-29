@@ -597,14 +597,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (share) {
                     let time = new Date().getTime();
                     writeToLog(time, "TimeEnd");
-                    await sendLogToServer(consoleLog).then(() => {
-                        document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataOk} ${strings.runningUt}</p>`;
-                    }).catch(() => {
-                        document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataErr} ${strings.runningUt}</p>`;
-                    });
-
+                    await sendLogToServer(consoleLog);
                 }
                 await openPath(undertaleEXE);
+                await setTimeoutPromise(5000);
+                await exit(0);
                 break;
             //last tab - exit
             case document.querySelector(".exit-done"):
@@ -799,14 +796,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             //offline install
             console.log('offline')
             if (platform == "steam") {
-                //main.js:991  Uncaught (in promise) invalid utf-8 sequence of 1 bytes from index 108
-                deltaFile = await resolveResource("offline/s.txt").catch((e) => {
-                    console.log(e)
-                })
+                await resolveResource("offline/steam.patch").then((filePath) => {
+                    // remove \\?\
+                    deltaFile = filePath.replace("\\\\?\\", "");
+                }).catch((e) => {
+                    writeToLog("Steam: " + e, "OfflineFetchError");
+                });
             } else {
-                deltaFile = await resolveResource("offline/gog.patch").catch((e) => {
-                    console.log(e)
-                })
+                await resolveResource("offline/gog.patch").then((filePath) => {
+                    // remove \\?\
+                    deltaFile = filePath.replace("\\\\?\\", "");
+                }).catch((e) => {
+                    writeToLog("GOG: " + e, "OfflineFetchError");
+                });
             }
         }
         let ins = document.querySelector(".install-progress");
@@ -860,6 +862,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     return;
                 });
             ins.innerHTML += `<p>${strings.install.patchSavedAs} ${deltaFile}.</p>`;
+            //add temp folder to the file
+            let tempPath = await tempdir();
+            deltaFile = `${tempPath}${deltaFile}`;
         }
         let oldFile = `${folder}\\data.win`;
         //if already installed
@@ -868,15 +873,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         })
         if (installed) oldFile = `${folder}\\data_old.win`;
         let finalFile = `${folder}\\data_patched.win`;
-        let tempPath = await tempdir();
         //apply patch
         let args = [
             "-d",
             "-s",
-            oldFile, `${tempPath}${deltaFile}`, finalFile
+            oldFile, deltaFile, finalFile
         ];
-        let car = RunCmd.sidecar('binaries/xdelta3', args);
-        let cmd = await car.execute();
+        console.log(args.toString());
+        let cmd = await RunCmd
+            .sidecar('binaries/xdelta3', args, { encoding: "Windows-1252" })
+            .execute();
+        console.log(cmd);
         if (cmd.code == 1) {
             switch (cmd.stderr) {
                 case "xdelta3: target window checksum mismatch: XD3_INVALID_INPUT\r\n":
@@ -950,8 +957,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (url) {
             writeToLog(true, "WasOnlineInstall");
             await rmTemp(deltaFile, { dir: BaseDirectory.Temp })
-                .then(() => {
-                    progress.innerHTML += `<p>Patch soubor ${deltaFile} smazán.</p>`;
+                .then(async () => {
+                    let tempPath = await tempdir();
+                    progress.innerHTML += `<p>Patch soubor ${deltaFile.replace(tempPath, "")} smazán.</p>`;
                 }).catch((err) => {
                     writeToLog(err, "TempRemoveError");
                     error = true;
@@ -987,6 +995,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             <button class="exit-done">${strings.install.exit}</button>
         </div>
       </div>`;
-        undertaleEXE = `${folder}/UNDERTALE.exe`;
+        undertaleEXE = `${folder}\\UNDERTALE.exe`;
     })
 })
