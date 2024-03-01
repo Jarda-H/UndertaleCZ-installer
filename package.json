@@ -1,7 +1,7 @@
 {
-  "name": "undertaleinstaller",
+  "name": "undertale-cz-installer",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.9.0",
   "type": "module",
   "scripts": {
     "tauri": "tauri"

@@ -8,7 +8,7 @@ const {
     removeFile: rmTemp,
 } = t.fs;
 const { locale, tempdir } = t.os;
-const { open: openPath, Command: RunCmd } = t.shell;
+const { open: openPath } = t.shell;
 const { getVersion } = t.app;
 const { resolveResource } = t.path;
 const DISCORD_LINK = "https://discord.gg/beGejNfDmv";
@@ -34,6 +34,7 @@ const strings = {
         cancelLabel: 'Ne',
         ok: 'Ok',
         installErrorTitle: "Chyba při instalaci",
+        selectFolder: "Vyberte složku s hrou",
     },
     fetchFailed: "Nepodařilo se získat informace o nejnovější verzi, instaluji verzi přibalenou s instalátorem.",
     newestVersion: "Aktuální verze překladu: ",
@@ -552,6 +553,8 @@ async function sendLogToServer(data) {
         }
         throw new Error("Server error");
     }).catch((error) => {
+        //change pap to sad
+        document.querySelector(".pap img").src = "./assets/img/Papyrus_upload_failed.png";
         document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataErr}</p>`;
         return error;
     });
@@ -609,11 +612,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (share) {
                     let time = new Date().getTime();
                     writeToLog(time, "TimeEnd");
-                    await sendLogToServer(consoleLog).then(() => {
-                        document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataOk} ${strings.exiting}</p>`;
-                    }).catch(() => {
-                        document.querySelector(".choice").innerHTML = `<p>${strings.sharingDataErr} ${strings.exiting}</p>`;
-                    });
+                    await sendLogToServer(consoleLog);
                     await setTimeoutPromise(5000);
                 }
                 await exit(0);
@@ -746,7 +745,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         let selected = await openPicker({
             directory: true,
             multiple: false,
-            defaultPath: val
+            defaultPath: val,
+            title: strings.alert.selectFolder
         });
         if (selected) checkFolder(selected);
     })
@@ -879,13 +879,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             "-s",
             oldFile, deltaFile, finalFile
         ];
-        console.log(args.toString());
-        let cmd = await RunCmd
-            .sidecar('binaries/xdelta3', args, { encoding: "Windows-1252" })
-            .execute();
-        console.log(cmd);
-        if (cmd.code == 1) {
-            switch (cmd.stderr) {
+        await invoke('run_xdelta3', {
+            source: oldFile,
+            patch: deltaFile,
+            output: finalFile,
+            offline: !url,
+            steam: (platform == "steam")
+        }).then((d) => {
+            console.log(d);
+            writeToLog(true, "xdelta3Ok");
+        }).catch(async (e) => {
+            switch (e) {
                 case "xdelta3: target window checksum mismatch: XD3_INVALID_INPUT\r\n":
                     //get hash
                     await GetFileHash(oldFile).then(async (md5hash) => {
@@ -910,7 +914,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
             endInstallerWithError();
             return;
-        }
+        });
+
         let progress = document.querySelector(".install-progress");
         let tab = document.querySelector("#tab3");
         progress.innerHTML += `<p>${strings.install.patchApplied}</p>`;
