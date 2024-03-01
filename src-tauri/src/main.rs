@@ -94,11 +94,13 @@ fn run_xdelta3(
     offline: bool,
     steam: bool,
 ) -> Result<String, String> {
+    use std::process::Command;
+    use std::os::windows::process::CommandExt;
+    let no_win: u32 = 0x08000000;
     let xdelta3 = include_bytes!("../binaries/xdelta3-x86_64-pc-windows-msvc.exe");
     let mut temp_path = std::env::temp_dir();
     temp_path.push("xdelta3.exe");
     std::fs::write(temp_path.clone(), xdelta3).expect("Unable to write file");
-    use std::process::Command;
     let mut patch_path = patch.to_string();
     if offline {
         let patch_bytes;
@@ -119,6 +121,7 @@ fn run_xdelta3(
         .arg(source)
         .arg(patch_path.clone())
         .arg(output)
+        .creation_flags(no_win)
         .output();
     //remove the temp exe
     std::fs::remove_file(temp_path).expect("Unable to remove file");
