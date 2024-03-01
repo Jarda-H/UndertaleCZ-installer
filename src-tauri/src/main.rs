@@ -76,14 +76,12 @@ fn remove_file(path: &str) -> Result<String, String> {
 }
 #[tauri::command]
 fn create_sha256_hash_from_timestamp_with_salt(timestamp: &str) -> Result<String, String> {
-    use dotenv::dotenv;
+    use dotenv_codegen::dotenv;
     use sha2::Digest;
-    use std::env;
     let mut hasher = sha2::Sha256::new();
     hasher.update(timestamp);
     //get salt from .env file
-    dotenv().ok();
-    let salt = env::var("SALT").expect("SALT must be set");
+    let salt = dotenv!("SALT");
     hasher.update(salt);
     let result = hasher.finalize();
     Ok(format!("{:x}", result))
