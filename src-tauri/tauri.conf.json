@@ -5,8 +5,7 @@
     "withGlobalTauri": true
   },
   "package": {
-    "productName": "undertaleinstaller",
-    "version": "0.0.0"
+    "productName": "Undertale CZ installer"
   },
   "tauri": {
     "allowlist": {
