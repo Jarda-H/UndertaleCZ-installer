@@ -33,8 +33,12 @@
         "confirm": true
       },
       "shell": {
-        "all": false,
         "open": "^((mailto:\\w+)|(tel:\\w+)|(https?://\\w+)).+|.*\\\\UNDERTALE\\.exe$"
+      },
+      "window": {
+        "close": true,
+        "minimize": true,
+        "startDragging": true
       }
     },
     "windows": [
@@ -42,7 +46,8 @@
         "title": "Undertale instálator češtiny",
         "width": 800,
         "height": 600,
-        "resizable": false
+        "resizable": false,
+        "decorations": false
       }
     ],
     "security": {
@@ -52,9 +57,7 @@
       "active": false,
       "targets": "all",
       "identifier": "cz.undertale.preview",
-      "icon": [
-        "icons/icon.ico"
-      ]
+      "icon": ["icons/icon.ico"]
     }
   }
 }

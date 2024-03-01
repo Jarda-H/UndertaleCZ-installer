@@ -1,4 +1,5 @@
 let t = window.__TAURI__
+const { appWindow } = t.window;
 const { invoke } = t.tauri;
 const { ask, dialog, message, open: openPicker } = t.dialog;
 const { exit } = t.process;
@@ -583,6 +584,14 @@ async function setTimeoutPromise(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 document.addEventListener("DOMContentLoaded", async () => {
+    //custom titlebar
+    document
+        .querySelector('.btn-minimize')
+        .addEventListener('click', () => appWindow.minimize())
+    document
+        .querySelector('.btn-close')
+        .addEventListener('click', () => appWindow.close())
+    //data to log
     let time = new Date().getTime();
     writeToLog(time, "TimeStart");
     let version = await getVersion();
@@ -756,7 +765,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     let undertaleEXE;
+    let activeInstall = false;
     document.querySelector(".install").addEventListener("click", async () => {
+        if (activeInstall) return;
+        activeInstall = true;
         //check the path again
         let folder = document.querySelector(".input input").value;
         let f = await IsFolderOK(folder);
