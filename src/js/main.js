@@ -92,6 +92,7 @@ function Speak(elem) {
         elem.innerHTML += text[i];
         //play sound
         let audio = new Audio('../assets/text_papyrus.mp3');
+        audio.volume = 0.5;
         audio.play();
         //animate
         if (i % 2 == 0) {
