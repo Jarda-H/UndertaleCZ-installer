@@ -584,6 +584,8 @@ async function setTimeoutPromise(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 function MoveDog() {
+    document.querySelector(".doggo").removeEventListener("mouseover", MoveDog);
+    writeToLog(true, "DoggoHovered");
     let dog = document.querySelector(".doggo");
     //get screen width
     let i = dog.querySelector("img");
