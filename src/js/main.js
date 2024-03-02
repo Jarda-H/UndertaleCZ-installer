@@ -526,7 +526,6 @@ async function removeFile(file, path) {
 let consoleLog = {};
 function writeToLog(text, action) {
     consoleLog[action] = text;
-    console.log(JSON.stringify(consoleLog));
 }
 async function sendLogToServer(data) {
     document.querySelector(".choice").innerHTML = `<p>${strings.sharingData}</p>`;
@@ -704,9 +703,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
                 writeToLog(e.target.checked, "ShareData");
                 break;
-            default:
-                console.log("Changed", e.target);
-                break;
         }
     })
     document.querySelector(".discord").addEventListener("click", async (e) => {
@@ -843,7 +839,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         } else {
             //offline install
-            console.log('offline')
             if (platform == "steam") {
                 await resolveResource("offline/steam.patch").then((filePath) => {
                     // remove \\?\
@@ -862,7 +857,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         let ins = document.querySelector(".install-progress");
         if (url) {
-            console.log('web')
             //download the file from the server and save it
             ins.innerHTML += `<p>${strings.install.platform} ${platform[0].toUpperCase() + platform.slice(1)}.</p>`;
             let timestamp = new Date().getTime();
@@ -919,7 +913,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         let oldFile = `${folder}\\data.win`;
         //if already installed
         let installed = await IsInstalled(folder).catch((e) => {
-            console.log("Cant verify")
+            writeToLog(e, "CantVerifyIfInstalled");
         })
         if (installed) oldFile = `${folder}\\data_old.win`;
         let finalFile = `${folder}\\data_patched.win`;
@@ -930,8 +924,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             output: finalFile,
             offline: !url,
             steam: (platform == "steam")
-        }).then((d) => {
-            console.log(d);
+        }).then(() => {
             writeToLog(true, "xdelta3Ok");
         }).catch(async (e) => {
             switch (e) {
