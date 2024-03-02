@@ -915,6 +915,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             let tempPath = await tempdir();
             deltaFile = `${tempPath}${deltaFile}`;
         }
+        let error = false;
         let oldFile = `${folder}\\data.win`;
         //if already installed
         let installed = await IsInstalled(folder).catch((e) => {
@@ -923,11 +924,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (installed) oldFile = `${folder}\\data_old.win`;
         let finalFile = `${folder}\\data_patched.win`;
         //apply patch
-        let args = [
-            "-d",
-            "-s",
-            oldFile, deltaFile, finalFile
-        ];
         await invoke('run_xdelta3', {
             source: oldFile,
             patch: deltaFile,
@@ -942,7 +938,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 case "xdelta3: target window checksum mismatch: XD3_INVALID_INPUT\r\n":
                     //get hash
                     await GetFileHash(oldFile).then(async (md5hash) => {
-                        writeToLog([cmd.stderr, cmd.stdout, "MD5 hash nesedí!", md5hash], "xdelta3Error");
+                        writeToLog([e, "MD5 hash nesedí!", md5hash], "xdelta3Error");
                     });
                     ins.innerHTML += `<p>${strings.install.error}</p>`;
                     await message(strings.reinstallGame,
@@ -952,8 +948,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                         });
                     break;
                 default:
-                    writeToLog([cmd.stderr, cmd.stdout, "Neznámá chyba!"], "xdelta3Error");
-                    ins.innerHTML += `<p>${strings.install.xdeltaError}: ${cmd.stderr}</p>`;
+                    writeToLog([e, "Neznámá chyba!"], "xdelta3Error");
+                    ins.innerHTML += `<p>${strings.install.xdeltaError}: ${e}</p>`;
                     ins.innerHTML += `<p>${strings.install.discord}</p>`;
                     await message(strings.install.xdeltaError, {
                         title: strings.alert.installErrorTitle,
@@ -962,9 +958,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                     break;
             }
             endInstallerWithError();
+            error = true;
             return;
         });
-
+        if (error) {
+            return;
+        }
         let progress = document.querySelector(".install-progress");
         let tab = document.querySelector("#tab3");
         progress.innerHTML += `<p>${strings.install.patchApplied}</p>`;
@@ -1007,7 +1006,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
         //if was online install, delete the patch
-        let error = false;
         if (url) {
             writeToLog(true, "WasOnlineInstall");
             await rmTemp(deltaFile, { dir: BaseDirectory.Temp })
