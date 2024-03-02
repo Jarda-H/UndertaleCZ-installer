@@ -584,6 +584,24 @@ async function setTimeoutPromise(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 document.addEventListener("DOMContentLoaded", async () => {
+    //disable right click
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    //and reload/print etc options
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'F5' ||
+            (e.ctrlKey && e.key === 'r') || //reload
+            (e.ctrlKey && e.shiftKey && e.key === 'r') || //reload with shift 
+            (e.ctrlKey && e.key === 'p') || //print
+            (e.ctrlKey && e.shiftKey && e.key === 's') || //print win32
+            (e.ctrlKey && e.key === 'u') || //view source
+            (e.ctrlKey && e.key === 'j') || //downloads
+            (e.ctrlKey && e.key === 'g') || //search
+            (e.ctrlKey && e.shiftKey && e.key === 'g') || //search
+            (e.ctrlKey && e.key === 'f') //search
+        ) {
+            e.preventDefault();
+        }
+    });
     //custom titlebar
     document
         .querySelector('.btn-minimize')
@@ -679,7 +697,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             writeToLog(err, "DiscordClickedError");
         });
     })
-    document.addEventListener('contextmenu', e => e.preventDefault());
     setTimeout(() => {
         document.querySelector(".loader").classList.add("remove");
     }, 1000);
