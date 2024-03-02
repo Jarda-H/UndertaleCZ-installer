@@ -106,7 +106,7 @@ function Speak(elem) {
             tab.classList.add("done");
             clearInterval(interval);
         }
-    }, 70);
+    }, 100);
 }
 // a simple parser for Valve's KeyValue format
 // https://developer.valvesoftware.com/wiki/KeyValues
