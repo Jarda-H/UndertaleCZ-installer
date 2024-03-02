@@ -68,7 +68,18 @@ body {
   font-style: normal;
   font-display: swap;
 }
-
+.doggo {
+  position: fixed;
+  bottom: -40px;
+  left: -50px;
+  z-index: 1;
+  transition: all 1s ease-out;
+  overflow: hidden;
+  img {
+    width: 100px;
+    image-rendering: pixelated;
+  }
+}
 .loader {
   position: fixed;
   display: flex;

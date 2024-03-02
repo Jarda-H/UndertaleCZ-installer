@@ -583,6 +583,24 @@ function endInstallerWithError() {
 async function setTimeoutPromise(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+function MoveDog() {
+    let dog = document.querySelector(".doggo");
+    //get screen width
+    let i = dog.querySelector("img");
+    let from = 0;
+    let to = window.innerWidth + 100;
+    let run = setInterval(() => {
+        //move the dog
+        if (from > to) clearInterval(run);
+        dog.style.left = from + "px";
+        from += 50;
+        if (i.src.endsWith("dog_1.png")) {
+            i.src = "./assets/img/dog_2.png";
+        } else {
+            i.src = "./assets/img/dog_1.png";
+        }
+    }, 100);
+}
 document.addEventListener("DOMContentLoaded", async () => {
     //disable right click
     document.addEventListener('contextmenu', e => e.preventDefault());
@@ -1031,4 +1049,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       </div>`;
         undertaleEXE = `${folder}\\UNDERTALE.exe`;
     })
+    //dog run on hover
+    document.querySelector(".doggo").addEventListener("mouseover", MoveDog);
 })
