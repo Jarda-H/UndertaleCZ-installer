@@ -919,6 +919,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (installed) oldFile = `${folder}\\data_old.win`;
         let finalFile = `${folder}\\data_patched.win`;
         //apply patch
+        writeToLog([
+            oldFile,
+            deltaFile,
+            finalFile,
+            !url,
+            platform
+        ], "patch");
         await invoke('run_xdelta3', {
             source: oldFile,
             patch: deltaFile,
