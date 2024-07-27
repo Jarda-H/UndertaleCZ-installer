@@ -810,6 +810,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             await message(strings.wrongFolder, {
                 title: strings.alert.error, type: 'warning', okLabel: strings.alert.okLabel
             });
+            activeInstall = false;
             return;
         }
         //hash verify
@@ -819,6 +820,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             await message(strings.reinstallGame, {
                 title: strings.alert.wrongHashTitle, type: 'warning', okLabel: strings.alert.okLabel
             });
+            activeInstall = false;
             return;
         }
         document.getElementById("tab2").style.display = "none";
