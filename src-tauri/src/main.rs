@@ -4,23 +4,22 @@
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 fn steam_is_installed() -> Result<String, String> {
-    let mut key = winreg::RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
-    let mut subkey = key
-        .open_subkey("SOFTWARE\\Wow6432Node\\Valve\\Steam")
-        .unwrap();
-    let mut value: String = subkey.get_value("InstallPath").unwrap();
-    if value.is_empty() {
-        //try 32 bit
-        key = winreg::RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
-        subkey = key.open_subkey("SOFTWARE\\Valve\\Steam").unwrap();
-        value = subkey.get_value("InstallPath").unwrap();
+    let key = winreg::RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
+    match key.open_subkey("SOFTWARE\\Wow6432Node\\Valve\\Steam") {
+        Ok(subkey) => {
+            // try to get the value of the "InstallPath" key
+            let val: String = subkey.get_value("InstallPath").map_err(|e| e.to_string())?;
+            if val.is_empty() {
+                return Err("Steam is not installed, unable to find InstallPath".into());
+            }
+            Ok(val)
+        }
+        Err(_e) => {
+            Err("Failed to open subkey SOFTWARE\\Wow6432Node\\Valve\\Steam".into())
+        }
     }
-    if value.is_empty() {
-        return Err("Steam nebyl nalezen".into());
-    }
-    //println!("Steam is installed at: {}", value);
-    Ok(value.into())
 }
+
 #[tauri::command]
 fn get_file_status(path: &str) -> Result<String, String> {
     let metadata = std::fs::metadata(path);
@@ -103,7 +102,7 @@ fn run_xdelta3(
     std::fs::write(temp_path.clone(), xdelta3).expect("Unable to write file");
     let mut patch_path = patch.to_string();
     if offline {
-        let patch_bytes;
+        let patch_bytes: &[u8];
         if steam {
             patch_bytes = include_bytes!("../offline/steam.patch");
         } else {
