@@ -53,7 +53,7 @@ const strings = {
         patchSavedAs: "Patch soubor stažen a uložen jako",
         xdeltaError: "Chyba při aplikaci patche",
         discord: "Pokud problém bude přetrvávat, kontaktujte nás na Discordu.",
-        run: "Spustit Undertale",
+        run: "Spustit PlešTale",
         exit: "Ukončit",
     },
     dontWannaToShare: "Nesdílet data o instalaci",
@@ -65,7 +65,7 @@ const strings = {
     sharingDataOk: "Data úspěšně nahrána, děkujeme.",
     sharingDataErr: "Nepodařilo se nahrát data, zkuste to později.",
     exiting: "Ukončuji...",
-    runningUt: "Spouštím Undertale...",
+    runningUt: "Spouštím PlešTale...",
 }
 
 let audio = new Audio('../assets/text_papyrus.mp3');
