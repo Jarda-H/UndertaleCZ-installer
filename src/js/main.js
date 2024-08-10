@@ -836,33 +836,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         let gog = ver.querySelector(".file-data .gog-cz");
         let deltaFile;
         let url = false;
-        if (
-            (steam && gog)
-        ) {
-            //online install
-            if (platform == "steam") {
-                url = steam.innerHTML;
-            } else {
-                url = gog.innerHTML;
-            }
+
+        //offline install
+        if (platform == "steam") {
+            await resolveResource("offline/steam.patch").then((filePath) => {
+                // remove \\?\
+                deltaFile = filePath.replace("\\\\?\\", "");
+            }).catch((e) => {
+                writeToLog("Steam: " + e, "OfflineFetchError");
+            });
         } else {
-            //offline install
-            if (platform == "steam") {
-                await resolveResource("offline/steam.patch").then((filePath) => {
-                    // remove \\?\
-                    deltaFile = filePath.replace("\\\\?\\", "");
-                }).catch((e) => {
-                    writeToLog("Steam: " + e, "OfflineFetchError");
-                });
-            } else {
-                await resolveResource("offline/gog.patch").then((filePath) => {
-                    // remove \\?\
-                    deltaFile = filePath.replace("\\\\?\\", "");
-                }).catch((e) => {
-                    writeToLog("GOG: " + e, "OfflineFetchError");
-                });
-            }
+            await resolveResource("offline/gog.patch").then((filePath) => {
+                // remove \\?\
+                deltaFile = filePath.replace("\\\\?\\", "");
+            }).catch((e) => {
+                writeToLog("GOG: " + e, "OfflineFetchError");
+            });
         }
+        
         let ins = document.querySelector(".install-progress");
         if (url) {
             //download the file from the server and save it
