@@ -67,6 +67,9 @@ const strings = {
     exiting: "Ukončuji...",
     runningUt: "Spouštím Undertale...",
 }
+
+let audio = new Audio('../assets/text_papyrus.mp3');
+audio.volume = 0.25;
 //Papyrus letterbox
 function Speak(elem) {
     let text = elem.innerHTML;
@@ -94,8 +97,6 @@ function Speak(elem) {
             i = text.length
         elem.innerHTML = text.slice(0, i);
         //play sound
-        let audio = new Audio('../assets/text_papyrus.mp3');
-        audio.volume = 0.25;
         audio.play();
         //animate
         if (i % 2 == 0) {
