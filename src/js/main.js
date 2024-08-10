@@ -70,6 +70,7 @@ const strings = {
 //Papyrus letterbox
 function Speak(elem) {
     let text = elem.innerHTML;
+    let speakSpeed = 4;
     if (!text) return;
     //get closest parent letter-box
     let p1 = elem.closest(".letter-box").querySelector(".pap1");
@@ -89,7 +90,9 @@ function Speak(elem) {
             tab.classList.add("done");
             return;
         }
-        elem.innerHTML += text[i];
+        if (i > text.length)
+            i = text.length
+        elem.innerHTML = text.slice(0, i);
         //play sound
         let audio = new Audio('../assets/text_papyrus.mp3');
         audio.volume = 0.25;
@@ -102,11 +105,12 @@ function Speak(elem) {
             p1.style.display = "none";
             p2.style.display = "block";
         }
-        i++;
+        
         if (i >= text.length) {
             tab.classList.add("done");
             clearInterval(interval);
         }
+        i+=speakSpeed;
     }, 100);
 }
 // a simple parser for Valve's KeyValue format
