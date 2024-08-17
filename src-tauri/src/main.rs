@@ -101,19 +101,13 @@ fn run_xdelta3(
     temp_path.push("xdelta3.exe");
     std::fs::write(temp_path.clone(), xdelta3).expect("Unable to write file");
     let mut patch_path = patch.to_string();
-    if offline {
-        let patch_bytes: &[u8];
-        if steam {
-            patch_bytes = include_bytes!("../offline/steam.patch");
-        } else {
-            patch_bytes = include_bytes!("../offline/gog.patch");
-        };
-        let mut temp_path_patch = std::env::temp_dir();
-        temp_path_patch.push("unt.patch");
-        let temp_path_patch_str = temp_path_patch.to_str().unwrap().to_string();
-        std::fs::write(temp_path_patch.clone(), patch_bytes).expect("Unable to write file");
-        patch_path = temp_path_patch_str;
-    }
+    let patch_bytes: &[u8];
+    patch_bytes = include_bytes!("../offline/steam.patch");
+    let mut temp_path_patch = std::env::temp_dir();
+    temp_path_patch.push("unt.patch");
+    let temp_path_patch_str = temp_path_patch.to_str().unwrap().to_string();
+    std::fs::write(temp_path_patch.clone(), patch_bytes).expect("Unable to write file");
+    patch_path = temp_path_patch_str;
     let output = Command::new(&temp_path)
         .arg("-d")
         .arg("-s")
