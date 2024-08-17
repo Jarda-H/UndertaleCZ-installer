@@ -766,7 +766,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     ver.innerHTML = strings.fetchFailed;
                     return;
                 }
-                ver.innerHTML = `<p>${strings.newestVersion}${data.version}</p>
+                ver.innerHTML = `<p>${strings.newestVersion} 1.0 - Specialní Plešatá Edice</p>
         <div class="file-data" style="display: none">
             <p class="md5-steam">${data.md5.original_steam}</p>
             <p class="md5-gog">${data.md5.original_gog}</p>
