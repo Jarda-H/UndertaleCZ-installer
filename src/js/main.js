@@ -14,7 +14,7 @@ const { getVersion } = t.app;
 const { resolveResource } = t.path;
 const DISCORD_LINK = "https://discord.gg/beGejNfDmv";
 const STEAM_MD5 = "5903fc5cb042a728d4ad8ee9e949c6eb";
-const GOG_MD5 = "dd8ebb409962e678258106468ced621e";
+const GOG_MD5 = "ff4f10d0434b332f46e1f35a900ec862";
 const UNDERTALE_STEAM_ID = 391540;
 const strings = {
     hashFail: "Nepodařilo se získat hash souboru. Zkuste zvolit jinou složku, popř. nás kontaktute na Discordu.",
