@@ -115,6 +115,7 @@ fn run_xdelta3(
         patch_path = temp_path_patch_str;
     }
     let output = Command::new(&temp_path)
+        .arg("-f")
         .arg("-d")
         .arg("-s")
         .arg(source)
