@@ -882,23 +882,71 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
             let totalLength = response.headers.get('Content-Length');
             let reader = response.body.getReader();
-            let data = new Uint8Array(totalLength);
+            let chunks = [];
             let receivedLength = 0;
+            let downloadTimeout = 5 * 60 * 1000; // 5 minutes timeout
+            let maxFileSize = 500 * 1024 * 1024; // 500MB max
+            let startTime = Date.now();
             ins.innerHTML += `<p class="dwnld"></p>`;
+            
             while (true) {
+                // Check timeout
+                if (Date.now() - startTime > downloadTimeout) {
+                    writeToLog("Download timeout exceeded", "DownloadTimeout");
+                    ins.innerHTML += `<p>${strings.install.downloadError}</p>`;
+                    endInstallerWithError();
+                    return;
+                }
+                
+                // Check max file size
+                if (receivedLength > maxFileSize) {
+                    writeToLog("Download exceeded max file size", "DownloadTooLarge");
+                    ins.innerHTML += `<p>${strings.install.downloadError}</p>`;
+                    endInstallerWithError();
+                    return;
+                }
+                
                 let { done, value } = await reader.read();
 
                 if (done) break;
 
-                data.set(value, receivedLength);
+                chunks.push(value);
                 receivedLength += value.length;
 
-                let progress = Math.round(receivedLength / totalLength * 100);
-                if (progress < 99) {
-                    document.querySelector(".install-progress .dwnld").innerHTML = `${strings.install.downloaded} ${progress}%`;
+                if (totalLength) {
+                    let progress = Math.round(receivedLength / totalLength * 100);
+                    if (progress < 99) {
+                        document.querySelector(".install-progress .dwnld").innerHTML = `${strings.install.downloaded} ${progress}%`;
+                    } else {
+                        document.querySelector(".install-progress .dwnld").innerHTML = `${strings.install.downloaded}. ${strings.install.saving}.`;
+                    }
                 } else {
-                    document.querySelector(".install-progress .dwnld").innerHTML = `${strings.install.downloaded}. ${strings.install.saving}.`;
+                    document.querySelector(".install-progress .dwnld").innerHTML = `${strings.install.downloaded}...`;
                 }
+            }
+            
+            // Validate download size matches Content-Length if provided
+            if (totalLength && Math.abs(receivedLength - totalLength) > 1000) {
+                writeToLog(`Content-Length mismatch: expected ${totalLength}, got ${receivedLength}`, "DownloadSizeMismatch");
+                ins.innerHTML += `<p>${strings.install.downloadError}</p>`;
+                endInstallerWithError();
+                return;
+            }
+            
+            // Validate we actually received data
+            if (receivedLength === 0) {
+                writeToLog("Download received 0 bytes", "EmptyDownload");
+                ins.innerHTML += `<p>${strings.install.downloadError}</p>`;
+                endInstallerWithError();
+                return;
+            }
+            
+            // Combine all chunks into single Uint8Array
+            let data = new Uint8Array(receivedLength);
+            let offset = 0;
+            for (let chunk of chunks) {
+                data.set(chunk, offset);
+                offset += chunk.length;
             }
             await writeBinaryFile(deltaFile, data, { dir: BaseDirectory.Temp })
                 .catch((err) => {
