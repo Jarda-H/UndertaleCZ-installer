@@ -1059,14 +1059,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         //if was online install, delete the patch
         if (url) {
             writeToLog(true, "WasOnlineInstall");
-            await rmTemp(deltaFile, { dir: BaseDirectory.Temp })
+            // Extract just the filename from the full path for rmTemp
+            let patchFileName = deltaFile.split('\\').pop();
+            await rmTemp(patchFileName, { dir: BaseDirectory.Temp })
                 .then(async () => {
-                    let tempPath = await tempdir();
-                    progress.innerHTML += `<p>Patch soubor ${deltaFile.replace(tempPath, "")} smazán.</p>`;
+                    progress.innerHTML += `<p>Patch soubor ${patchFileName} smazán.</p>`;
                 }).catch((err) => {
                     writeToLog(err, "TempRemoveError");
                     error = true;
-                    progress.innerHTML += `<p>Chyba mazání ${deltaFile}.</p>`;
+                    progress.innerHTML += `<p>Chyba mazání ${patchFileName}.</p>`;
                     tab.innerHTML += `<h2>${strings.install.error}</h2>`;
                 });
         } else {
