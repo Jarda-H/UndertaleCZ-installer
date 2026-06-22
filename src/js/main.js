@@ -53,7 +53,7 @@ const strings = {
         patchSavedAs: "Patch soubor stažen a uložen jako",
         xdeltaError: "Chyba při aplikaci patche",
         discord: "Pokud problém bude přetrvávat, kontaktujte nás na Discordu.",
-        run: "Spustit Undertale",
+        run: "Spustit PlešTale",
         exit: "Ukončit",
     },
     dontWannaToShare: "Nesdílet data o instalaci",
@@ -65,11 +65,15 @@ const strings = {
     sharingDataOk: "Data úspěšně nahrána, děkujeme.",
     sharingDataErr: "Nepodařilo se nahrát data, zkuste to později.",
     exiting: "Ukončuji...",
-    runningUt: "Spouštím Undertale...",
+    runningUt: "Spouštím PlešTale...",
 }
+
+let audio = new Audio('../assets/text_papyrus.mp3');
+audio.volume = 0.25;
 //Papyrus letterbox
 function Speak(elem) {
     let text = elem.innerHTML;
+    let speakSpeed = 4;
     if (!text) return;
     //get closest parent letter-box
     let p1 = elem.closest(".letter-box").querySelector(".pap1");
@@ -89,10 +93,10 @@ function Speak(elem) {
             tab.classList.add("done");
             return;
         }
-        elem.innerHTML += text[i];
+        if (i > text.length)
+            i = text.length
+        elem.innerHTML = text.slice(0, i);
         //play sound
-        let audio = new Audio('../assets/text_papyrus.mp3');
-        audio.volume = 0.5;
         audio.play();
         //animate
         if (i % 2 == 0) {
@@ -102,11 +106,12 @@ function Speak(elem) {
             p1.style.display = "none";
             p2.style.display = "block";
         }
-        i++;
+        
         if (i >= text.length) {
             tab.classList.add("done");
             clearInterval(interval);
         }
+        i+=speakSpeed;
     }, 100);
 }
 // a simple parser for Valve's KeyValue format
@@ -761,7 +766,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     ver.innerHTML = strings.fetchFailed;
                     return;
                 }
-                ver.innerHTML = `<p>${strings.newestVersion}${data.version}</p>
+                ver.innerHTML = `<p>${strings.newestVersion} 1.0 - Specialní Plešatá Edice</p>
         <div class="file-data" style="display: none">
             <p class="md5-steam">${data.md5.original_steam}</p>
             <p class="md5-gog">${data.md5.original_gog}</p>
@@ -831,33 +836,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         let gog = ver.querySelector(".file-data .gog-cz");
         let deltaFile;
         let url = false;
-        if (
-            (steam && gog)
-        ) {
-            //online install
-            if (platform == "steam") {
-                url = steam.innerHTML;
-            } else {
-                url = gog.innerHTML;
-            }
+
+        //offline install
+        if (platform == "steam") {
+            await resolveResource("offline/steam.patch").then((filePath) => {
+                // remove \\?\
+                deltaFile = filePath.replace("\\\\?\\", "");
+            }).catch((e) => {
+                writeToLog("Steam: " + e, "OfflineFetchError");
+            });
         } else {
-            //offline install
-            if (platform == "steam") {
-                await resolveResource("offline/steam.patch").then((filePath) => {
-                    // remove \\?\
-                    deltaFile = filePath.replace("\\\\?\\", "");
-                }).catch((e) => {
-                    writeToLog("Steam: " + e, "OfflineFetchError");
-                });
-            } else {
-                await resolveResource("offline/gog.patch").then((filePath) => {
-                    // remove \\?\
-                    deltaFile = filePath.replace("\\\\?\\", "");
-                }).catch((e) => {
-                    writeToLog("GOG: " + e, "OfflineFetchError");
-                });
-            }
+            await resolveResource("offline/gog.patch").then((filePath) => {
+                // remove \\?\
+                deltaFile = filePath.replace("\\\\?\\", "");
+            }).catch((e) => {
+                writeToLog("GOG: " + e, "OfflineFetchError");
+            });
         }
+        
         let ins = document.querySelector(".install-progress");
         if (url) {
             //download the file from the server and save it
