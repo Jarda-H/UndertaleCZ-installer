@@ -14,7 +14,7 @@ const { getVersion } = t.app;
 const { resolveResource } = t.path;
 const DISCORD_LINK = "https://discord.gg/beGejNfDmv";
 const STEAM_MD5 = "5903fc5cb042a728d4ad8ee9e949c6eb";
-const GOG_MD5 = "dd8ebb409962e678258106468ced621e";
+const GOG_MD5 = "ff4f10d0434b332f46e1f35a900ec862";
 const UNDERTALE_STEAM_ID = 391540;
 const strings = {
     hashFail: "Nepodařilo se získat hash souboru. Zkuste zvolit jinou složku, popř. nás kontaktute na Discordu.",
@@ -67,9 +67,13 @@ const strings = {
     exiting: "Ukončuji...",
     runningUt: "Spouštím Undertale...",
 }
+
+let audio = new Audio('../assets/text_papyrus.mp3');
+audio.volume = 0.25;
 //Papyrus letterbox
 function Speak(elem) {
     let text = elem.innerHTML;
+    let speakSpeed = 4;
     if (!text) return;
     //get closest parent letter-box
     let p1 = elem.closest(".letter-box").querySelector(".pap1");
@@ -89,10 +93,10 @@ function Speak(elem) {
             tab.classList.add("done");
             return;
         }
-        elem.innerHTML += text[i];
+        if (i > text.length)
+            i = text.length
+        elem.innerHTML = text.slice(0, i);
         //play sound
-        let audio = new Audio('../assets/text_papyrus.mp3');
-        audio.volume = 0.5;
         audio.play();
         //animate
         if (i % 2 == 0) {
@@ -102,11 +106,12 @@ function Speak(elem) {
             p1.style.display = "none";
             p2.style.display = "block";
         }
-        i++;
+        
         if (i >= text.length) {
             tab.classList.add("done");
             clearInterval(interval);
         }
+        i+=speakSpeed;
     }, 100);
 }
 // a simple parser for Valve's KeyValue format
